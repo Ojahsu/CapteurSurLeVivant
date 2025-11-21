@@ -9,6 +9,7 @@
 #define SS_PIN 10
 #define LED_VERT_PIN 3
 #define LED_ROUGE_PIN 2
+#define BUZZER_PIN 5
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
@@ -47,9 +48,10 @@ void setup()
 {
     Serial.begin(9600);
 
-    // INITIALISATION DES LEDs (AJOUTER CES LIGNES)
+    // INITIALISATION DES PINS
     pinMode(LED_VERT_PIN, OUTPUT);
     pinMode(LED_ROUGE_PIN, OUTPUT);
+    pinMode(BUZZER_PIN, OUTPUT);
     
     // WiFi et MQTT
     connectToWiFi();
@@ -68,6 +70,13 @@ void setup()
     digitalWrite(LED_VERT_PIN, LOW);
 
     digitalWrite(LED_ROUGE_PIN, HIGH);
+
+    // 3 bips de test
+    for(int i = 0; i < 2; i++) {
+        tone(BUZZER_PIN, 500, 100);
+        delay(200);
+    }
+    
 }
 
 void printMacAddress()
@@ -161,6 +170,59 @@ String getUID()
     return content;
 }
 
+// void loop()
+// {
+//     // Vérifier connexion MQTT
+//     if (!mqtt_client.connected())
+//     {
+//         connectToMQTTBroker();
+//     }
+//     mqtt_client.loop();
+
+//     unsigned long currentTime = millis();
+
+//     // Lecture RFID
+//     if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())
+//     {
+//         String uidString = getUID();
+
+//         Serial.print("UID détecté: ");
+//         Serial.println(uidString);
+
+//         // Envoi de l'UID sur le topic MQTT 2
+//         String message = "{\"uid\":\"" + uidString + "\",\"timestamp\":" + String(millis()) + "}";
+
+//         if (mqtt_client.publish(mqtt_topic2, message.c_str()))
+//         {
+//             Serial.println("UID envoyé sur MQTT topic 2: " + message);
+//         }
+//         else
+//         {
+//             Serial.println("Échec de l'envoi de l'UID");
+//         }
+//         digitalWrite(LED_ROUGE_PIN, LOW);
+//         digitalWrite(LED_VERT_PIN, HIGH);
+//         tone(BUZZER_PIN, 2000, 150);
+//         delay(1000);
+//         digitalWrite(LED_VERT_PIN, LOW);
+//         digitalWrite(LED_ROUGE_PIN, HIGH);
+
+//         // Halt PICC (à faire après chaque lecture)
+//         mfrc522.PICC_HaltA();
+//         mfrc522.PCD_StopCrypto1();
+//     }
+
+//     // Publication périodique de la MAC address (toutes les 5 secondes)
+//     if (currentTime - lastPublishTimeMAC >= 5000)
+//     {
+//         String message = "MAC Address is " + MAC_address;
+//         mqtt_client.publish(mqtt_topic1, message.c_str());
+//         Serial.println("Published message: " + message);
+//         lastPublishTimeMAC = currentTime;
+//         lastLedRouge = currentTime;
+//     }
+// }
+
 void loop()
 {
     // Vérifier connexion MQTT
@@ -172,43 +234,64 @@ void loop()
 
     unsigned long currentTime = millis();
 
-    // Lecture RFID
+    // ✅ ANTI-REBOND : Lecture RFID seulement si 1 seconde s'est écoulée
     if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())
     {
-        String uidString = getUID();
-
-        Serial.print("UID détecté: ");
-        Serial.println(uidString);
-
-        // Envoi de l'UID sur le topic MQTT 2
-        String message = "{\"uid\":\"" + uidString + "\",\"timestamp\":" + String(millis()) + "}";
-
-        if (mqtt_client.publish(mqtt_topic2, message.c_str()))
+        // Vérifier qu'au moins 1 seconde s'est écoulée depuis la dernière lecture
+        if (currentTime - lastPublishTimeRFID >= 1000)
         {
-            Serial.println("UID envoyé sur MQTT topic 2: " + message);
+            String uidString = getUID();
+
+            Serial.print("UID détecté: ");
+            Serial.println(uidString);
+
+            // Envoi de l'UID sur le topic MQTT 2
+            String message = "{\"uid\":\"" + uidString + "\",\"timestamp\":" + String(millis()) + "}";
+
+            if (mqtt_client.publish(mqtt_topic2, message.c_str()))
+            {
+                Serial.println("✅ UID envoyé sur MQTT: " + message);
+                
+                // LED verte + buzzer = succès
+                digitalWrite(LED_ROUGE_PIN, LOW);
+                digitalWrite(LED_VERT_PIN, HIGH);
+                tone(BUZZER_PIN, 2000, 150);
+                delay(200);
+                digitalWrite(LED_VERT_PIN, LOW);
+            }
+            else
+            {
+                Serial.println("❌ Échec de l'envoi de l'UID");
+                
+                // LED rouge clignotante = erreur
+                for(int i = 0; i < 3; i++)
+                {
+                    digitalWrite(LED_ROUGE_PIN, HIGH);
+                    tone(BUZZER_PIN, 500, 100);
+                    delay(100);
+                    digitalWrite(LED_ROUGE_PIN, LOW);
+                    delay(100);
+                }
+            }
+
+            // ✅ METTRE À JOUR LE TIMESTAMP
+            lastPublishTimeRFID = currentTime;
         }
         else
         {
-            Serial.println("Échec de l'envoi de l'UID");
+            // Carte détectée trop tôt (moins de 1 seconde)
+            Serial.println("⏸️  Anti-rebond actif - carte ignorée");
         }
-        digitalWrite(LED_ROUGE_PIN, LOW);
-        digitalWrite(LED_VERT_PIN, HIGH);
-        delay(1000);
-        digitalWrite(LED_VERT_PIN, LOW);
-        digitalWrite(LED_ROUGE_PIN, HIGH);
 
         // Halt PICC (à faire après chaque lecture)
         mfrc522.PICC_HaltA();
         mfrc522.PCD_StopCrypto1();
     }
-
-    // Publication périodique de la MAC address (toutes les 5 secondes)
-    if (currentTime - lastPublishTimeMAC >= 5000)
+    
+    // Remettre LED rouge si aucune carte détectée
+    if (currentTime - lastPublishTimeRFID > 1500)
     {
-        String message = "MAC Address is " + MAC_address;
-        mqtt_client.publish(mqtt_topic1, message.c_str());
-        Serial.println("Published message: " + message);
-        lastPublishTimeMAC = currentTime;
-        lastLedRouge = currentTime;
+        digitalWrite(LED_VERT_PIN, LOW);
+        digitalWrite(LED_ROUGE_PIN, HIGH);
     }
 }
