@@ -1,0 +1,1397 @@
+[
+    {
+        "id": "d51ecc2370523e59",
+        "type": "tab",
+        "label": "Flux 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "79cabc64c31b3eb6",
+        "type": "ui-text-input",
+        "z": "d51ecc2370523e59",
+        "group": "ba5a6555e087eb69",
+        "name": "",
+        "label": "Entrer votre nom",
+        "order": 2,
+        "width": "6",
+        "height": "1",
+        "topic": "nom",
+        "topicType": "msg",
+        "mode": "text",
+        "tooltip": "",
+        "delay": 300,
+        "passthru": true,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 890,
+        "y": 200,
+        "wires": [
+            [
+                "d8990c35d72945e6"
+            ]
+        ]
+    },
+    {
+        "id": "6e6114723844ee03",
+        "type": "ui-text-input",
+        "z": "d51ecc2370523e59",
+        "group": "ba5a6555e087eb69",
+        "name": "",
+        "label": "Entrer votre prénom",
+        "order": 3,
+        "width": "6",
+        "height": "1",
+        "topic": "prenom",
+        "topicType": "msg",
+        "mode": "text",
+        "tooltip": "",
+        "delay": 300,
+        "passthru": true,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 900,
+        "y": 280,
+        "wires": [
+            [
+                "cfa0b361bc0e03b8"
+            ]
+        ]
+    },
+    {
+        "id": "38ea355388584311",
+        "type": "file in",
+        "z": "d51ecc2370523e59",
+        "name": "LectureListeUtilisateur",
+        "filename": "user.json",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "utf8",
+        "allProps": false,
+        "x": 1200,
+        "y": 420,
+        "wires": [
+            [
+                "c268f5274e72a143"
+            ]
+        ]
+    },
+    {
+        "id": "a64029c407677cf6",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "setUIDGénéralVariable",
+        "func": "var uid;\n\nif(msg.payload && msg.payload.uid){\n    uid = msg.payload.uid;\n} else if(msg.uid) {\n    uid = msg.uid;\n} else {\n    node.error(\"Aucun UID trouvé dans le message!\");\n    return null;\n}\n\nvar actualUser = flow.get('uid');\nif (!actualUser || actualUser == uid){\n    flow.set('uid', uid);    \n    msg.autoriseConnexion = true\n} else {\n    msg.autoriseConnexion = false\n}\n\nnode.warn(actualUser + \" \" + msg.autoriseConnexion);\n\n//node.warn(\"UID sauvegardé : \" + uid); // Pour debug\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 460,
+        "wires": [
+            [
+                "1f3d4c33cefc5f45"
+            ]
+        ]
+    },
+    {
+        "id": "6b05fd9490f8151c",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "setTempPayload",
+        "func": "const UIDMessage = {\n    \"uid\": \"04858212657680\"\n};\n\nreturn UIDMessage",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 340,
+        "wires": [
+            [
+                "a64029c407677cf6",
+                "de4f37222af648a7",
+                "79dd1de323d11b2d"
+            ]
+        ]
+    },
+    {
+        "id": "f07d34b23b63a72a",
+        "type": "inject",
+        "z": "d51ecc2370523e59",
+        "name": "User connu",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 340,
+        "wires": [
+            [
+                "6b05fd9490f8151c"
+            ]
+        ]
+    },
+    {
+        "id": "c268f5274e72a143",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "checkUserExist",
+        "func": "var uid = flow.get('uid');\n\n// Lire le contenu du fichier\nlet data;\ntry {\n    // Si msg.payload est déjà une string JSON\n    if (typeof msg.payload === 'string') {\n        data = JSON.parse(msg.payload);\n    } else {\n        data = msg.payload;\n    }\n} catch (e) {\n    data = { \"users\": [] };\n}\n\n// Chercher l'utilisateur\nconst utilisateur = data.users.find(u => u.UID === uid);\n\nif (utilisateur && utilisateur.nom && utilisateur.prenom) {\n    // Utilisateur existe avec nom/prénom\n    msg.userExists = true;\n    msg.userName = utilisateur.nom + \" \" + utilisateur.prenom;\n    node.warn(\"✅ Utilisateur trouvé : \" + msg.userName);\n} else {\n    // Nouvel utilisateur OU utilisateur sans nom/prénom\n    msg.userExists = false;\n    node.warn(\"❌ Nouvel utilisateur, UID : \" + uid);\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1420,
+        "y": 420,
+        "wires": [
+            [
+                "b95fdd1358c37114"
+            ]
+        ]
+    },
+    {
+        "id": "b95fdd1358c37114",
+        "type": "switch",
+        "z": "d51ecc2370523e59",
+        "name": "userExist",
+        "property": "userExists",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1600,
+        "y": 460,
+        "wires": [
+            [
+                "0d31a72e9288ee24"
+            ],
+            [
+                "8dad1e3d50f50448",
+                "b3aaae1b2c8aac15"
+            ]
+        ]
+    },
+    {
+        "id": "4f44b156304d10a3",
+        "type": "ui-button",
+        "z": "d51ecc2370523e59",
+        "group": "ba5a6555e087eb69",
+        "name": "Valider inscription",
+        "label": "Valider",
+        "order": 5,
+        "width": "2",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 1970,
+        "y": 640,
+        "wires": [
+            [
+                "d6930bcdfc23fb77"
+            ]
+        ]
+    },
+    {
+        "id": "d8990c35d72945e6",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "Save nom",
+        "func": "// Sauvegarder le nom dans le flow\nif (msg.payload != \"\"){\n    flow.set('inputNom', msg.payload);\n    node.warn(\"Nom saisi : \" + msg.payload);    \n}\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1140,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "cfa0b361bc0e03b8",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "Save prenom",
+        "func": "// Sauvegarder le nom dans le flow\nif (msg.payload != \"\") {\n    flow.set('inputPrenom', msg.payload);\n    node.warn(\"Prenom saisi : \" + msg.payload);\n}\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1130,
+        "y": 280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "8dad1e3d50f50448",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "function 2",
+        "func": "msg.payload = \"Nouveau joueur détecté ! Veuillez remplir vos informations.\";\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1780,
+        "y": 680,
+        "wires": [
+            [
+                "4f44b156304d10a3",
+                "e812fca111440366"
+            ]
+        ]
+    },
+    {
+        "id": "ebca154ce64fcfa7",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "SaveNewJoueur",
+        "func": "// Récupérer les données saisies\nconst nom = flow.get('inputNom');\nconst prenom = flow.get('inputPrenom');\nconst uid = flow.get('uid');\n\n// Vérifier que tout est rempli\nif (!nom || !prenom) {\n    node.error(\"Nom ou prénom manquant !\");\n    return null;\n}\n\n// Lire le fichier JSON\nlet data;\ntry {\n    data = JSON.parse(msg.payload);\n} catch (e) {\n    data = { \"users\": [] };\n}\n\n// Vérifier si l'UID existe déjà\nconst index = data.users.findIndex(u => u.UID === uid);\n\nif (index !== -1) {\n    // Mettre à jour l'utilisateur existant\n    data.users[index].nom = nom;\n    data.users[index].prenom = prenom;\n    node.warn(\"✏️ Utilisateur mis à jour : \" + nom + \" \" + prenom);\n} else {\n    // Ajouter un nouvel utilisateur\n    const nouvelUtilisateur = {\n        \"nom\": nom,\n        \"prenom\": prenom,\n        \"UID\": uid\n    };\n    data.users.push(nouvelUtilisateur);\n    node.warn(\"✅ Nouvel utilisateur ajouté : \" + nom + \" \" + prenom);\n}\n\n// Préparer pour l'écriture\nmsg.payload = JSON.stringify(data, null, 2);\nmsg.filename = \"user.json\";\n\n// Nettoyer\nflow.set('inputNom', null);\nflow.set('inputPrenom', null);\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2420,
+        "y": 640,
+        "wires": [
+            [
+                "abe4e49e3b2417b2"
+            ]
+        ]
+    },
+    {
+        "id": "d6930bcdfc23fb77",
+        "type": "file in",
+        "z": "d51ecc2370523e59",
+        "name": "LectureListeUtilisateur",
+        "filename": "user.json",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "utf8",
+        "allProps": false,
+        "x": 2200,
+        "y": 640,
+        "wires": [
+            [
+                "ebca154ce64fcfa7"
+            ]
+        ]
+    },
+    {
+        "id": "abe4e49e3b2417b2",
+        "type": "file",
+        "z": "d51ecc2370523e59",
+        "name": "EcritureListeUtilisateurs",
+        "filename": "user.json",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "utf8",
+        "x": 2650,
+        "y": 640,
+        "wires": [
+            [
+                "38ea355388584311"
+            ]
+        ]
+    },
+    {
+        "id": "de4f37222af648a7",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "resetInput",
+        "func": "msg.payload = \"\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 240,
+        "wires": [
+            [
+                "79cabc64c31b3eb6",
+                "6e6114723844ee03"
+            ]
+        ]
+    },
+    {
+        "id": "7bea814ac9c58774",
+        "type": "debug",
+        "z": "d51ecc2370523e59",
+        "name": "log UID 1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "uid",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 860,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "79dd1de323d11b2d",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "function 4",
+        "func": "\nnode.log(msg)\nif (msg.payload) {\n    msg.payload = \"Scan d'une carte d'ID : \" + msg.payload.uid;\n} else {\n    msg.payload = \"Scan d'une carte d'ID : \" + msg.uid;\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 660,
+        "wires": [
+            [
+                "7bea814ac9c58774",
+                "98cfb3f141310d44",
+                "15381b49e6d661af"
+            ]
+        ]
+    },
+    {
+        "id": "4d62a6b593c144a4",
+        "type": "mqtt in",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "topic": "homeTrainerCastres/Group1-C/RFID",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "232c71a577fae8cb",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 260,
+        "y": 520,
+        "wires": [
+            [
+                "79dd1de323d11b2d",
+                "a64029c407677cf6",
+                "de4f37222af648a7"
+            ]
+        ]
+    },
+    {
+        "id": "98cfb3f141310d44",
+        "type": "ui-text",
+        "z": "d51ecc2370523e59",
+        "group": "58617f5ac1d5e3bd",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "Carte inscription",
+        "label": "Carte",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "uid",
+        "valueType": "msg",
+        "x": 880,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "e4f3018882d6ea07",
+        "type": "ui-text",
+        "z": "d51ecc2370523e59",
+        "group": "226042c13261c1d2",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Bienvenue",
+        "label": "",
+        "format": "{{msg.payload}}",
+        "layout": "row-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 2010,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "15381b49e6d661af",
+        "type": "ui-text",
+        "z": "d51ecc2370523e59",
+        "group": "58617f5ac1d5e3bd",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Carte bienvenue",
+        "label": "Carte",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "uid",
+        "valueType": "msg",
+        "x": 880,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "0d31a72e9288ee24",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "AfficherBienvenue",
+        "func": "const uid = flow.get('uid');\n\n// Message centré avec HTML/CSS\nmsg.payload = `\n<div style=\"\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 40vh;\n    width: 100%;\n\">\n    <div style=\"\n        text-align: center;\n        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n        padding: 20px 60px 40px 60px;\n        border-radius: 15px;\n        box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n        color: white;\n    \">\n        <h1 style=\"\n            margin: 0 0 20px 0;\n            font-size: 32px;\n            font-weight: 600;\n        \">\n            <div style=\"animation: hello 1s infinite; margin-bottom: 10px;\">\n                👋\n            </div>\n            <div>\n                Bienvenue ${msg.userName} !\n            </div>            \n        </h1>\n        \n        <div style=\"\n            background: rgba(255,255,255,0.2);\n            padding: 20px;\n            border-radius: 10px;\n            margin-top: 20px;\n        \">\n            <p style=\"\n                margin: 0 0 10px 0;\n                font-size: 14px;\n                opacity: 0.9;\n                text-transform: uppercase;\n                letter-spacing: 1px;\n            \">Carte</p>\n            \n            <p style=\"\n                margin: 0;\n                font-size: 28px;\n                font-weight: bold;\n                letter-spacing: 3px;\n                font-family: 'Courier New', monospace;\n            \">${uid}</p>\n        </div>\n    </div>\n</div>\n\n<style>\n@keyframes hello {\n    0%, 100% { transform: rotate(-5deg); }\n    50% { transform: rotate(15deg); }\n}\n</style>\n`;\n\n// Log pour debug\nnode.warn(\"Affichage bienvenue pour : \" + msg.userName);\n\n// Commande pour afficher/masquer les groupes\nconst controleUI = {\n    payload: {\n        group: {\n            show: [\"226042c13261c1d2\"],\n            hide: [\"ba5a6555e087eb69\", \"e80c56817f43dc76\",\"04d530d9eda5f4cf\"]\n        }\n    }\n};\n\nreturn [msg, controleUI];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1810,
+        "y": 340,
+        "wires": [
+            [
+                "e4f3018882d6ea07"
+            ],
+            [
+                "91f9afc507634c34"
+            ]
+        ]
+    },
+    {
+        "id": "b3aaae1b2c8aac15",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "AfficherInscription",
+        "func": "// // Message de bienvenue personnalisé\n// msg.payload = \"🆕 Nouveau joueur détecté !\\n📝 Merci de remplir le formulaire.\";\n\n\n// // Commande pour afficher/masquer les groupes\n// const controleUI = {\n//     payload: {\n//         group: {\n//             show: [\"ba5a6555e087eb69\"],\n//             hide: [\"226042c13261c1d2\"]\n//         }\n//     }\n// };\n\n// return [msg, controleUI];\n\nconst uid = flow.get('uid');\n\nmsg.payload = `\n<div style=\"\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 40vh;\n    width: 100%;\n\">\n    <div style=\"\n        text-align: center;\n        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);\n        padding: 40px 60px;\n        border-radius: 15px;\n        box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n        color: white;\n    \">\n        <div style=\"\n            font-size: 80px;\n            margin-bottom: 20px;\n            animation: pedal 1s infinite;\n        \">🚴‍♂️</div>\n        \n        <h1 style=\"\n            margin: 0 0 20px 0;\n            font-size: 32px;\n            font-weight: 600;\n        \">\n            💨 Bienvenue à toi nouveau joueur !\n        </h1>\n\n        <div style=\"\n            background: rgba(255,255,255,0.2);\n            padding: 20px;\n            border-radius: 10px;\n            margin-top: 20px;\n        \">\n            <p style=\"\n                margin: 0 0 10px 0;\n                font-size: 14px;\n                opacity: 0.9;\n                text-transform: uppercase;\n                letter-spacing: 1px;\n            \">🎫 Carte</p>\n\n            <p style=\"\n                margin: 0;\n                font-size: 28px;\n                font-weight: bold;\n                letter-spacing: 3px;\n                font-family: 'Courier New', monospace;\n            \">${uid}</p>\n        </div>\n        \n        <p style=\"\n            margin: 20px 0 0 0;\n            font-size: 16px;\n            opacity: 0.9;\n        \">\n            🏁 Prêt à pédaler ? Let's go! ⚡\n        </p>\n\n        <div style=\"\n            margin-top: 30px;\n            padding-top: 30px;\n            border-top: 1px solid rgba(255,255,255,0.3);\n        \">\n            <p style=\"\n                margin: 0;\n                font-size: 14px;\n                opacity: 0.8;\n            \">\n                👇 Remplis le formulaire ci-dessous\n            </p>\n        </div>\n    </div>\n</div>\n\n<style>\n@keyframes pedal {\n    0%, 100% { transform: rotate(-5deg); }\n    50% { transform: rotate(5deg); }\n}\n</style>\n`;\n\n// Log pour debug\nnode.warn(\"Affichage formulaire d'inscription pour carte : \" + uid);\n\n// Commande pour afficher/masquer les groupes\nconst controleUI = {\n    payload: {\n        group: {\n            show: [\"ba5a6555e087eb69\"],\n            hide: [\"226042c13261c1d2\",\"e80c56817f43dc76\",\"04d530d9eda5f4cf\"]\n        }\n    }\n};\n\nreturn [msg, controleUI];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1830,
+        "y": 540,
+        "wires": [
+            [
+                "88a7906d712be327"
+            ],
+            [
+                "fe1a30b60e2ca786"
+            ]
+        ]
+    },
+    {
+        "id": "79272284489bac84",
+        "type": "ui-control",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "ui": "9e7d9e2741b11cc6",
+        "events": "all",
+        "x": 3040,
+        "y": 540,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "88a7906d712be327",
+        "type": "ui-text",
+        "z": "d51ecc2370523e59",
+        "group": "ba5a6555e087eb69",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Inscription",
+        "label": "",
+        "format": "{{msg.payload}}",
+        "layout": "row-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 2030,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "0fdbded60c74037f",
+        "type": "inject",
+        "z": "d51ecc2370523e59",
+        "name": "No user",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 90,
+        "y": 400,
+        "wires": [
+            [
+                "49573c9e2193746b"
+            ]
+        ]
+    },
+    {
+        "id": "49573c9e2193746b",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "setTempPayload",
+        "func": "const UIDMessage = {\n    \"uid\": msg.payload\n    // \"uid\": 1763891862084\n};\n\nreturn UIDMessage",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 400,
+        "wires": [
+            [
+                "a64029c407677cf6",
+                "79dd1de323d11b2d",
+                "de4f37222af648a7"
+            ]
+        ]
+    },
+    {
+        "id": "1aec92a8efde157c",
+        "type": "inject",
+        "z": "d51ecc2370523e59",
+        "name": "Initial input",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 2680,
+        "y": 540,
+        "wires": [
+            [
+                "065c930f67e2cbfd"
+            ]
+        ]
+    },
+    {
+        "id": "065c930f67e2cbfd",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "AfficherAttente",
+        "func": "msg.payload = `\n<div style=\"\n    display: flex;\n    justify-content: center;\n    align-items: center;\n    min-height: 60vh;\n    width: 100%;\n\">\n    <div style=\"\n        text-align: center;\n        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n        padding: 50px 70px;\n        border-radius: 20px;\n        box-shadow: 0 15px 40px rgba(0,0,0,0.3);\n        color: white;\n        max-width: 600px;\n        width: 100%;\n    \">\n        <div style=\"\n            font-size: 100px;\n            margin-bottom: 30px;\n            animation: pulse 2s infinite;\n        \">🎴</div>\n        \n        <h1 style=\"\n            margin: 0 0 20px 0;\n            font-size: 36px;\n            font-weight: 600;\n        \">\n            En attente...\n        </h1>\n        \n        <p style=\"\n            margin: 0 0 40px 0;\n            font-size: 18px;\n            opacity: 0.9;\n            line-height: 1.6;\n        \">\n            🚴‍♂️ Scannez votre carte<br>\n            pour commencer votre session\n        </p>\n        \n        <div style=\"\n            background: rgba(255,255,255,0.15);\n            padding: 30px;\n            border-radius: 15px;\n            border: 2px dashed rgba(255,255,255,0.4);\n            animation: blink 2s infinite;\n        \">\n            <div style=\"\n                font-size: 60px;\n                margin-bottom: 15px;\n            \">📡</div>\n            \n            <p style=\"\n                margin: 0;\n                font-size: 16px;\n                font-weight: 500;\n                text-transform: uppercase;\n                letter-spacing: 2px;\n            \">\n                Approchez votre carte\n            </p>\n        </div>\n        \n        <div style=\"\n            margin-top: 40px;\n            padding-top: 30px;\n            border-top: 1px solid rgba(255,255,255,0.3);\n        \">\n            <p style=\"\n                margin: 0;\n                font-size: 14px;\n                opacity: 0.7;\n            \">\n                💡 Pas encore de carte ? Demandez-en une !\n            </p>\n        </div>\n    </div>\n</div>\n\n<style>\n@keyframes pulse {\n    0%, 100% {\n        transform: scale(1);\n        opacity: 1;\n    }\n    50% {\n        transform: scale(1.1);\n        opacity: 0.8;\n    }\n}\n\n@keyframes blink {\n    0%, 100% {\n        opacity: 1;\n    }\n    50% {\n        opacity: 0.6;\n    }\n}\n</style>\n`;\n\n// Log pour debug\nnode.warn(\"Affichage attente de carte\");\n\n// Commande pour afficher/masquer les groupes\nconst controleUI = {\n    payload: {\n        group: {\n            show: [\"e80c56817f43dc76\"],\n            hide: [\"226042c13261c1d2\",\"ba5a6555e087eb69\",\"04d530d9eda5f4cf\"]\n        }\n    }\n};\n\nflow.set('uid', null)\n\nreturn [msg, controleUI];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2860,
+        "y": 500,
+        "wires": [
+            [
+                "8f2d988206b1b1b9"
+            ],
+            [
+                "79272284489bac84"
+            ]
+        ]
+    },
+    {
+        "id": "8f2d988206b1b1b9",
+        "type": "ui-text",
+        "z": "d51ecc2370523e59",
+        "group": "e80c56817f43dc76",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "En attente de carte",
+        "label": "",
+        "format": "{{msg.payload}}",
+        "layout": "row-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 3070,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "fe1a30b60e2ca786",
+        "type": "ui-control",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "ui": "9e7d9e2741b11cc6",
+        "events": "all",
+        "x": 2020,
+        "y": 580,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "91f9afc507634c34",
+        "type": "ui-control",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "ui": "9e7d9e2741b11cc6",
+        "events": "all",
+        "x": 2000,
+        "y": 380,
+        "wires": [
+            [
+                "44967b60ef7f970b"
+            ]
+        ]
+    },
+    {
+        "id": "861980eea79802cb",
+        "type": "mqtt in",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "topic": "homeTrainerCastres/Group1-C/HEARTBEAT",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "232c71a577fae8cb",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 330,
+        "y": 800,
+        "wires": [
+            [
+                "c8854e2dde469612",
+                "1e82f2d2c5dc40b2"
+            ]
+        ]
+    },
+    {
+        "id": "c8854e2dde469612",
+        "type": "debug",
+        "z": "d51ecc2370523e59",
+        "name": "log UID 1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "1e82f2d2c5dc40b2",
+        "type": "ui-gauge",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "group": "226042c13261c1d2",
+        "order": 2,
+        "value": "payload.bpm",
+        "valueType": "msg",
+        "width": "12",
+        "height": 3,
+        "gtype": "gauge-half",
+        "gstyle": "rounded",
+        "title": "Battements cardiaques",
+        "alwaysShowTitle": false,
+        "floatingTitlePosition": "top-left",
+        "units": "units",
+        "icon": "",
+        "prefix": "",
+        "suffix": "",
+        "segments": [
+            {
+                "from": "0",
+                "color": "#5cd65c",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "100",
+                "color": "#ffc800",
+                "text": "",
+                "textType": "label"
+            },
+            {
+                "from": "200",
+                "color": "#ea5353",
+                "text": "",
+                "textType": "label"
+            }
+        ],
+        "min": 0,
+        "max": "250",
+        "sizeThickness": 16,
+        "sizeGap": 4,
+        "sizeKeyThickness": 8,
+        "styleRounded": true,
+        "styleGlow": false,
+        "className": "",
+        "x": 640,
+        "y": 840,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a5658ec64cb4a244",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "AfficherDeco",
+        "func": "const userName = flow.get('userName') || \"\";\nconst userPrenom = flow.get('userPrenom') || \"\";\nconst fullName = userPrenom ? `${userPrenom} ${userName}` : userName;\n\nmsg.payload = `\n<div style=\"\n    min-height: 80vh;\n    border-radius: 20px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n    padding: 40px;\n    box-shadow: 0 20px 60px rgba(0,0,0,0.3);\n\">\n    <div style=\"\n        text-align: center;\n        color: white;\n        max-width: 600px;\n        border-radius: 15px;\n        animation: fadeIn 0.5s ease-in;\n    \">\n        \n        <!-- Icône animée -->\n        <div style=\"\n            font-size: 90px;\n            margin-bottom: 30px;\n            animation: bounce 2s infinite;\n        \">\n            ⏱️\n        </div>\n        \n        <!-- Titre principal -->\n        <h1 style=\"\n            font-size: 48px;\n            font-weight: 700;\n            margin: 0 0 20px 0;\n            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);\n            letter-spacing: -1px;\n        \">Session terminée</h1>\n        \n        <!-- Séparateur -->\n        <div style=\"\n            width: 100px;\n            height: 4px;\n            background: white;\n            margin: 30px auto;\n            border-radius: 2px;\n            opacity: 0.8;\n        \"></div>\n        \n        <!-- Message personnalisé -->\n        <h2 style=\"\n            font-size: 32px;\n            font-weight: 400;\n            margin: 30px 0;\n            opacity: 0.95;\n        \">Au revoir <strong>${fullName}</strong> ! 👋</h2>\n        \n        <!-- Carte d'info -->\n        <div style=\"\n            background: rgba(255,255,255,0.15);\n            backdrop-filter: blur(10px);\n            border-radius: 20px;\n            padding: 30px;\n            margin: 40px 0;\n            border: 1px solid rgba(255,255,255,0.2);\n        \">\n            <p style=\"\n                font-size: 20px;\n                margin: 0 0 20px 0;\n                line-height: 1.6;\n            \">\n                ⚠️ <strong>Déconnexion automatique</strong>\n            </p>\n            <p style=\"\n                font-size: 16px;\n                margin: 0;\n                opacity: 0.9;\n                line-height: 1.8;\n            \">\n                Votre session a été fermée après<br>\n                <strong>30 secondes d'inactivité</strong>\n            </p>\n        </div>\n        \n        <!-- Message de remerciement -->\n        <div style=\"\n            background: rgba(255,255,255,0.1);\n            border-radius: 15px;\n            padding: 25px;\n            margin: 30px 0;\n        \">\n            <p style=\"\n                font-size: 18px;\n                margin: 0;\n                line-height: 1.6;\n            \">\n                🚴‍♂️ Merci d'avoir utilisé le service<br>\n                <span style=\"opacity: 0.8;\">Scannez à nouveau votre carte pour continuer</span>\n            </p>\n        </div>\n        \n        <!-- Compteur de retour -->\n        <div style=\"\n            margin-top: 40px;\n            padding-top: 30px;\n            border-top: 1px solid rgba(255,255,255,0.3);\n        \">\n            <div style=\"\n                display: inline-block;\n                background: rgba(255,255,255,0.2);\n                padding: 15px 40px;\n                border-radius: 50px;\n                backdrop-filter: blur(5px);\n            \">\n                <p style=\"\n                    margin: 0;\n                    font-size: 16px;\n                    opacity: 0.9;\n                \">\n                    🔄 Retour automatique dans <strong>3 secondes</strong>...\n                </p>\n            </div>\n        </div>\n    </div>\n</div>\n\n<style>\n    @keyframes fadeIn {\n        from {\n            opacity: 0;\n            transform: translateY(20px);\n        }\n        to {\n            opacity: 1;\n            transform: translateY(0);\n        }\n    }\n    \n    @keyframes bounce {\n        0%, 100% {\n            transform: translateY(0);\n        }\n        50% {\n            transform: translateY(-20px);\n        }\n    }\n</style>\n`;\n\n// Log pour debug\nnode.warn(\"Affichage attente déconnexion\");\n\n// Commande pour afficher/masquer les groupes\nconst controleUI = {\n    payload: {\n        group: {\n            show: [\"04d530d9eda5f4cf\"],\n            hide: [\"226042c13261c1d2\",\"ba5a6555e087eb69\",\"e80c56817f43dc76\"]\n        }\n    }\n};\n\nreturn [msg, controleUI];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2330,
+        "y": 420,
+        "wires": [
+            [
+                "5a064e9e70f32547"
+            ],
+            [
+                "aa0bc52517faa580"
+            ]
+        ]
+    },
+    {
+        "id": "5a064e9e70f32547",
+        "type": "ui-text",
+        "z": "d51ecc2370523e59",
+        "group": "04d530d9eda5f4cf",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Deconnexion",
+        "label": "",
+        "format": "{{msg.payload}}",
+        "layout": "row-center",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "value": "payload",
+        "valueType": "msg",
+        "x": 2530,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "aa0bc52517faa580",
+        "type": "ui-control",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "ui": "9e7d9e2741b11cc6",
+        "events": "all",
+        "x": 2520,
+        "y": 460,
+        "wires": [
+            [
+                "f63a79c1dbed8b65"
+            ]
+        ]
+    },
+    {
+        "id": "6070d491766f75dd",
+        "type": "inject",
+        "z": "d51ecc2370523e59",
+        "name": "Initial input",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 2180,
+        "y": 460,
+        "wires": [
+            [
+                "a5658ec64cb4a244"
+            ]
+        ]
+    },
+    {
+        "id": "f63a79c1dbed8b65",
+        "type": "delay",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "3",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 2680,
+        "y": 460,
+        "wires": [
+            [
+                "065c930f67e2cbfd"
+            ]
+        ]
+    },
+    {
+        "id": "44967b60ef7f970b",
+        "type": "ui-button",
+        "z": "d51ecc2370523e59",
+        "group": "226042c13261c1d2",
+        "name": "Déconnexion",
+        "label": "Déconnexion",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2170,
+        "y": 380,
+        "wires": [
+            [
+                "a5658ec64cb4a244"
+            ]
+        ]
+    },
+    {
+        "id": "1f3d4c33cefc5f45",
+        "type": "switch",
+        "z": "d51ecc2370523e59",
+        "name": "Autorise Connexion",
+        "property": "autoriseConnexion",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 970,
+        "y": 460,
+        "wires": [
+            [
+                "38ea355388584311"
+            ],
+            [
+                "c857dbbc9bdd24e1",
+                "f31ccf1b57a46447"
+            ]
+        ]
+    },
+    {
+        "id": "21b7ae8ed29e7dd1",
+        "type": "ui-notification",
+        "z": "d51ecc2370523e59",
+        "ui": "9e7d9e2741b11cc6",
+        "position": "top right",
+        "colorDefault": false,
+        "color": "#ff0000",
+        "displayTime": "3",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "allowConfirm": false,
+        "confirmText": "Confirm",
+        "raw": false,
+        "className": "",
+        "name": "Attention",
+        "x": 1260,
+        "y": 540,
+        "wires": [
+            [
+                "f572ef1b048fde4e"
+            ]
+        ]
+    },
+    {
+        "id": "c857dbbc9bdd24e1",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "SetTextNotif",
+        "func": "msg.payload = \"Tentative de connexion non autorisée\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1170,
+        "y": 500,
+        "wires": [
+            [
+                "21b7ae8ed29e7dd1"
+            ]
+        ]
+    },
+    {
+        "id": "f31ccf1b57a46447",
+        "type": "debug",
+        "z": "d51ecc2370523e59",
+        "name": "debug 1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1120,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "e812fca111440366",
+        "type": "ui-button",
+        "z": "d51ecc2370523e59",
+        "group": "ba5a6555e087eb69",
+        "name": "Annuler inscription",
+        "label": "Annuler",
+        "order": 4,
+        "width": "2",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "red",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 1970,
+        "y": 720,
+        "wires": [
+            [
+                "2ac5ded0604ba2b4"
+            ]
+        ]
+    },
+    {
+        "id": "2ac5ded0604ba2b4",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "Cancel inscription",
+        "func": "flow.set('uid', null)\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2690,
+        "y": 720,
+        "wires": [
+            [
+                "065c930f67e2cbfd"
+            ]
+        ]
+    },
+    {
+        "id": "ad7348e3b9b1c7c1",
+        "type": "mqtt out",
+        "z": "d51ecc2370523e59",
+        "name": "",
+        "topic": "homeTrainerCastres/Group1-C/TONE",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "b362705b8bd710ed",
+        "x": 1450,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "f572ef1b048fde4e",
+        "type": "function",
+        "z": "d51ecc2370523e59",
+        "name": "LOW",
+        "func": "msg.payload = \"LOW\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1310,
+        "y": 580,
+        "wires": [
+            [
+                "ad7348e3b9b1c7c1"
+            ]
+        ]
+    },
+    {
+        "id": "ba5a6555e087eb69",
+        "type": "ui-group",
+        "name": "Inscription",
+        "page": "a85bda95901a45b7",
+        "width": "4",
+        "height": 1,
+        "order": 1,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "232c71a577fae8cb",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "58617f5ac1d5e3bd",
+        "type": "ui-group",
+        "name": "Hide",
+        "page": "a85bda95901a45b7",
+        "width": 6,
+        "height": 1,
+        "order": 5,
+        "showTitle": true,
+        "className": "",
+        "visible": false,
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "226042c13261c1d2",
+        "type": "ui-group",
+        "name": "Bienvenue",
+        "page": "a85bda95901a45b7",
+        "width": "4",
+        "height": 1,
+        "order": 2,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "9e7d9e2741b11cc6",
+        "type": "ui-base",
+        "name": "My Dashboard",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "e80c56817f43dc76",
+        "type": "ui-group",
+        "name": "En attente",
+        "page": "a85bda95901a45b7",
+        "width": "12",
+        "height": 1,
+        "order": 3,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "04d530d9eda5f4cf",
+        "type": "ui-group",
+        "name": "Deconnexion",
+        "page": "a85bda95901a45b7",
+        "width": "5",
+        "height": 1,
+        "order": 4,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "b362705b8bd710ed",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a85bda95901a45b7",
+        "type": "ui-page",
+        "name": "Accueil",
+        "ui": "9e7d9e2741b11cc6",
+        "path": "/page1",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "c960733c992c4482",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "c960733c992c4482",
+        "type": "ui-theme",
+        "name": "Default Theme",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#0094CE",
+            "bgPage": "#eeeeee",
+            "groupBg": "#ffffff",
+            "groupOutline": "#cccccc"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "96106f87c93ad30b",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.29.0"
+        }
+    }
+]
